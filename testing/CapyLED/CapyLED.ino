@@ -16,6 +16,13 @@ typedef struct {
   int b;
 } Color;
 
+typedef struct {
+  Color white = {255, 255, 255};
+  Color yellow = {150, 40, 0};
+  Color warmYellow = {220, 40, 0};
+  Color red = {220, 0, 0};
+} Mood;
+
 void setup() {
   // put your setup code here, to run once:
   // Set the RGB pins to output
@@ -72,45 +79,6 @@ void loop() {
   bruh2 = {255, 255, 255};
 
   interpolateColor(bruh1, bruh2);
-
-  // // green go from 0-40
-  // for (int g = 0; g < 40; g++) {
-  //   setColor(220, g, 0);
-  //   Serial.print("1 change green ");
-  //   Serial.println(g);
-  //   delay(50);
-  // }
-
-  // // red go from 255-180
-  // for (int r = 220; r > 179; r--) {
-  //   setColor(r, 40, 0);
-  //   Serial.print("2 change red ");
-  //   Serial.println(r);
-  //   delay(50);
-  // }
-
-  // // red go from 180-220
-  // for (int r = 180; r < 221; r++) {
-  //   setColor(r, 40, 0);
-  //   Serial.print("3 change red ");
-  //   Serial.println(r);
-  //   delay(50);
-  // }
-
-  // // green go from 40-0
-  // for (int g = 40; g >= 0; g--) {
-  //   setColor(220, g, 0);
-  //   Serial.print("4 change green ");
-  //   Serial.println(g);
-  //   delay(50);
-  // }
-
-  // for (int r = 150; r < 256; r++) {
-  //   setColor(r, 40, 0);
-  //   Serial.print("5 change red ");
-  //   Serial.println(r);
-  //   delay(50);
-  // }
 }
 
 /**
