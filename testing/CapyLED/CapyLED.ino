@@ -1,4 +1,3 @@
-#include "Color.h"
 
 // Change this to based on whether you are using a common anode or common cathode
 // RGB LED. See: https://makeabilitylab.github.io/physcomp/arduino/rgb-led
@@ -11,7 +10,11 @@ const int RGB_BLUE_PIN  = 6;
 const int DELAY_INTERVAL = 50; // interval in ms between incrementing hues
 const byte MAX_RGB_VALUE = 255;
 
-const Color STARTING_COLOR(255, 255, 218);
+typedef struct {
+  int r;
+  int g;
+  int b;
+} Color;
 
 void setup() {
   // put your setup code here, to run once:
@@ -20,7 +23,7 @@ void setup() {
   pinMode(RGB_GREEN_PIN, OUTPUT);
   pinMode(RGB_BLUE_PIN, OUTPUT);
 
-  setColor(STARTING_COLOR.r(), STARTING_COLOR.g(), STARTING_COLOR.b());
+  setColor(255, 255, 255);
 
   // Turn on Serial so we can verify expected colors via Serial Monitor
   Serial.begin(9600);
@@ -32,8 +35,8 @@ void loop() {
   // setColor(255, 255, 255);
   // delay(5000);
 
-  Color bruh1(220, 0, 0);
-  Color bruh2(220, 40, 0);
+  Color bruh1 = {220, 0, 0};
+  Color bruh2 = {220, 40, 0};
 
   interpolateColor(bruh1, bruh2);
 
@@ -99,17 +102,26 @@ void setColor(int red, int green, int blue)
 }
 
 /**
+ * Interpolate between two RGB colors
+ * From https://sl.bing.net/j1UrqXYF0k8
+*/
+Color interpolate(const Color& color1, const Color& color2, float fraction) {
+    Color result;
+    result.r = static_cast<int>((color2.r - color1.r) * fraction + color1.r);
+    result.g = static_cast<int>((color2.g - color1.g) * fraction + color1.g);
+    result.b = static_cast<int>((color2.b - color1.b) * fraction + color1.b);
+    return result;
+}
+
+/**
  * Given two Colors, call setColor() every DELAY_INTERVAL,
  * linearly interpolating between these two Colors.
 */
-void interpolateColor(Color a, Color b) {
-  Color bMinusA = b.subtract(a);
-
-
-
-
-  for (int g = 0; g < 40; g++) {
-    setColor(220, g, 0);
+void interpolateColor(const Color& color1, const Color& color2) {
+  for (int i = 1; i < 101; i++) {
+    float fraction = i / 100;
+    Color interpolatedColor = interpolate(color1, color2, fraction);
+    setColor(interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
     delay(DELAY_INTERVAL);
   }
 }
