@@ -17,11 +17,14 @@ typedef struct {
 } Color;
 
 typedef struct {
-  Color white = {255, 255, 255};
-  Color yellow = {150, 40, 0};
-  Color warmYellow = {220, 40, 0};
-  Color red = {220, 0, 0};
+  Color white;
+  Color yellow;
+  Color warmYellow;
+  Color red;
 } Mood;
+
+const int COLORSET_SIZE = 7;
+Color _colorSet[COLORSET_SIZE];
 
 void setup() {
   // put your setup code here, to run once:
@@ -32,53 +35,82 @@ void setup() {
 
   setColor(255, 255, 255);
 
+  Mood moods;
+  moods.white = {255, 255, 255};
+  moods.yellow = {150, 40, 0};
+  moods.warmYellow = {220, 40, 0};
+  moods.red = {220, 0, 0};
+
+  _colorSet[0] = moods.white;
+  _colorSet[1] = moods.yellow;
+  _colorSet[2] = moods.warmYellow;
+  _colorSet[3] = moods.red;
+  _colorSet[4] = moods.warmYellow;
+  _colorSet[5] = moods.yellow;
+  _colorSet[6] = moods.white;
+
+
+  // _colorSet.insert(_colorSet.begin(), Mood.white);
+  // _colorSet.insert(_colorSet.begin(), Mood.yellow);
+  // _colorSet.insert(_colorSet.begin(), Mood.warmYellow);
+  // _colorSet.insert(_colorSet.begin(), Mood.red);
+  // _colorSet.insert(_colorSet.begin(), Mood.warmYellow);
+  // _colorSet.insert(_colorSet.begin(), Mood.yellow);
+
   // Turn on Serial so we can verify expected colors via Serial Monitor
   Serial.begin(9600);
 }
 
 void loop() {
 
+  for (int i = 0; i < 101; i++) {
+    float fraction = i / 100.0;
+    Color currentColor = interpolateColorSet(fraction);
+    setColor(currentColor.r, currentColor.g, currentColor.b);
+    delay(50);
+  }
 
-  // white to yellow
-  Serial.println("white to yellow");
-  Color bruh1 = {255, 255, 255};
-  Color bruh2 = {150, 40, 0};
 
-  interpolateColor(bruh1, bruh2);
+  // // white to yellow
+  // Serial.println("white to yellow");
+  // Color bruh1 = {255, 255, 255};
+  // Color bruh2 = {150, 40, 0};
 
-  Serial.println("yellow to warm yellow");
+  // interpolateColor(bruh1, bruh2);
 
-  bruh1 = {150, 40, 0};
-  bruh2 = {220, 40, 0};
+  // Serial.println("yellow to warm yellow");
 
-  interpolateColor(bruh1, bruh2);
+  // bruh1 = {150, 40, 0};
+  // bruh2 = {220, 40, 0};
 
-  Serial.println("warm yellow to red");
+  // interpolateColor(bruh1, bruh2);
 
-  bruh1 = {220, 40, 0};
-  bruh2 = {220, 0, 0};
+  // Serial.println("warm yellow to red");
 
-  interpolateColor(bruh1, bruh2);
+  // bruh1 = {220, 40, 0};
+  // bruh2 = {220, 0, 0};
 
-  Serial.println("red to warm yellow");
+  // interpolateColor(bruh1, bruh2);
 
-  bruh1 = {220, 0, 0};
-  bruh2 = {220, 40, 0};
+  // Serial.println("red to warm yellow");
 
-  interpolateColor(bruh1, bruh2);
+  // bruh1 = {220, 0, 0};
+  // bruh2 = {220, 40, 0};
 
-  Serial.println("warm yellow to yellow");
+  // interpolateColor(bruh1, bruh2);
 
-  bruh1 = {220, 40, 0};
-  bruh2 = {150, 40, 0};
+  // Serial.println("warm yellow to yellow");
 
-  interpolateColor(bruh1, bruh2);
+  // bruh1 = {220, 40, 0};
+  // bruh2 = {150, 40, 0};
 
-  Serial.println("yellow to white");
-  bruh1 = {150, 40, 0};
-  bruh2 = {255, 255, 255};
+  // interpolateColor(bruh1, bruh2);
 
-  interpolateColor(bruh1, bruh2);
+  // Serial.println("yellow to white");
+  // bruh1 = {150, 40, 0};
+  // bruh2 = {255, 255, 255};
+
+  // interpolateColor(bruh1, bruh2);
 }
 
 /**
@@ -125,4 +157,21 @@ void interpolateColor(Color color1, Color color2) {
     setColor(interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
     delay(DELAY_INTERVAL);
   }
+}
+
+// Interpolate between a set of colors
+Color interpolateColorSet(float fraction) {
+    int segmentCount = COLORSET_SIZE - 1;
+    int segmentIndex = static_cast<int>(fraction * segmentCount);
+    float segmentFraction = fraction * segmentCount - segmentIndex;
+
+    const Color& color1 = _colorSet[segmentIndex];
+    const Color& color2 = _colorSet[segmentIndex + 1];
+
+    Color interpolatedColor;
+    interpolatedColor.r = static_cast<int>((color2.r - color1.r) * segmentFraction + color1.r);
+    interpolatedColor.g = static_cast<int>((color2.g - color1.g) * segmentFraction + color1.g);
+    interpolatedColor.b = static_cast<int>((color2.b - color1.b) * segmentFraction + color1.b);
+
+    return interpolatedColor;
 }

@@ -199,7 +199,7 @@ Color interpolate(const Color& color1, const Color& color2, float fraction) {
  * Given two Colors, call setColor() every DELAY_INTERVAL,
  * linearly interpolating between these two Colors.
 */
-void interpolateColor(Color color1, Color color2) {
+void fadeTwo(Color color1, Color color2) {
   for (int i = 1; i < 101; i++) {
     float fraction = i / 100.0;
     Color interpolatedColor = interpolate(color1, color2, fraction);
