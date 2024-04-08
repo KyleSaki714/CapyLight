@@ -1,4 +1,3 @@
-#include "Color.h"
 
 // Change this to based on whether you are using a common anode or common cathode
 // RGB LED. See: https://makeabilitylab.github.io/physcomp/arduino/rgb-led
@@ -8,8 +7,14 @@ const boolean COMMON_ANODE = false;
 const int RGB_RED_PIN = 3;
 const int RGB_GREEN_PIN  = 5;
 const int RGB_BLUE_PIN  = 6;
-const int DELAY_INTERVAL = 50; // interval in ms between incrementing hues
+const int DELAY_INTERVAL = 5; // interval in ms between incrementing hues
 const byte MAX_RGB_VALUE = 255;
+
+typedef struct {
+  int r;
+  int g;
+  int b;
+} Color;
 
 void setup() {
   // put your setup code here, to run once:
@@ -25,13 +30,46 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  // white
-  // setColor(255, 255, 255);
-  // delay(5000);
 
-  Color bruh1(220, 0, 0);
-  Color bruh2(220, 40, 0);
+
+  // white to yellow
+  Serial.println("white to yellow");
+  Color bruh1 = {255, 255, 255};
+  Color bruh2 = {150, 40, 0};
+
+  interpolateColor(bruh1, bruh2);
+
+  Serial.println("yellow to warm yellow");
+
+  bruh1 = {150, 40, 0};
+  bruh2 = {220, 40, 0};
+
+  interpolateColor(bruh1, bruh2);
+
+  Serial.println("warm yellow to red");
+
+  bruh1 = {220, 40, 0};
+  bruh2 = {220, 0, 0};
+
+  interpolateColor(bruh1, bruh2);
+
+  Serial.println("red to warm yellow");
+
+  bruh1 = {220, 0, 0};
+  bruh2 = {220, 40, 0};
+
+  interpolateColor(bruh1, bruh2);
+
+  Serial.println("warm yellow to yellow");
+
+  bruh1 = {220, 40, 0};
+  bruh2 = {150, 40, 0};
+
+  interpolateColor(bruh1, bruh2);
+
+  Serial.println("yellow to white");
+  bruh1 = {150, 40, 0};
+  bruh2 = {255, 255, 255};
 
   interpolateColor(bruh1, bruh2);
 
@@ -100,23 +138,23 @@ void setColor(int red, int green, int blue)
  * Interpolate between two RGB colors
  * From https://sl.bing.net/j1UrqXYF0k8
 */
-Color* interpolate(Color color1, Color color2, float fraction) {
-    int red = static_cast<int>((color2.r() - color1.r()) * fraction + color1.r());
-    int green = static_cast<int>((color2.g() - color1.g()) * fraction + color1.g());
-    int blue = static_cast<int>((color2.b() - color1.b()) * fraction + color1.b());
-    return new Color(red, green, blue);
+Color interpolate(const Color& color1, const Color& color2, float fraction) {
+    Color result;
+    result.r = static_cast<int>((color2.r - color1.r) * fraction + color1.r);
+    result.g = static_cast<int>((color2.g - color1.g) * fraction + color1.g);
+    result.b = static_cast<int>((color2.b - color1.b) * fraction + color1.b);
+    return result;
 }
 
 /**
  * Given two Colors, call setColor() every DELAY_INTERVAL,
  * linearly interpolating between these two Colors.
 */
-void interpolateColor(const Color color1, const Color color2) {
+void interpolateColor(Color color1, Color color2) {
   for (int i = 1; i < 101; i++) {
-    float fraction = i / 100;
-    Color* interpolatedColor = interpolate(color1, color2, fraction);
-    setColor(interpolatedColor->r, interpolatedColor->g, interpolatedColor->b);
-    delete interpolatedColor;
+    float fraction = i / 100.0;
+    Color interpolatedColor = interpolate(color1, color2, fraction);
+    setColor(interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
     delay(DELAY_INTERVAL);
   }
 }
