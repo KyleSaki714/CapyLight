@@ -66,6 +66,9 @@ void loop() {
   for (int i = 0; i < 101; i++) {
     float fraction = i / 100.0;
     Color currentColor = interpolateColorSet(fraction);
+
+
+
     setColor(currentColor.r, currentColor.g, currentColor.b);
     delay(50);
   }
@@ -160,6 +163,7 @@ void interpolateColor(Color color1, Color color2) {
 }
 
 // Interpolate between a set of colors
+// Thanks Chat https://sl.bing.net/dADkpPUXIRw
 Color interpolateColorSet(float fraction) {
     int segmentCount = COLORSET_SIZE - 1;
     int segmentIndex = static_cast<int>(fraction * segmentCount);

@@ -42,8 +42,20 @@ bool _modeswitchbtn_laststate;
 
 
 // CROSSFADE
+typedef struct {
+  Color white;
+  Color yellow;
+  Color warmYellow;
+  Color red;
+} Mood;
 
-
+const float CROSSFADE_SPEED = 1000.0; // defines how fast the LED fades thru the entire _colorSet. 100=fast 1000=slow (looks nice tho)
+const int COLORSET_SIZE = 7;
+const uint8_t PHOTOCELL_PIN = A0;
+Color _colorSet[COLORSET_SIZE];
+float _crossfade_currFraction;
+int _i = 0;
+float _currBrightness = 0.0;
 
 // LOFI
 const int petThreshold = 1500; // how long until the pet sensing resets (ms)
@@ -70,6 +82,20 @@ void setup() {
   setColor(255, 255, 255);
 
   _currentMode = CROSSFADE;
+  Mood moods;
+  moods.white = {255, 255, 255};
+  moods.yellow = {150, 40, 0};
+  moods.warmYellow = {220, 40, 0};
+  moods.red = {220, 0, 0};
+
+  _colorSet[0] = moods.white;
+  _colorSet[1] = moods.yellow;
+  _colorSet[2] = moods.warmYellow;
+  _colorSet[3] = moods.red;
+  _colorSet[4] = moods.warmYellow;
+  _colorSet[5] = moods.yellow;
+  _colorSet[6] = moods.white;
+
   _modeswitchbtn_lastontime = millis();
   _modeswitchbtn_laststate = LOW;
   pinMode(INPUT_BUTTON_MODESWITCH, INPUT_PULLUP);
@@ -97,6 +123,42 @@ void loop() {
 
 void crossfadeMode() {
   Serial.println("CROSSFADE MODE");
+
+  int lightVal = analogRead(A0);
+
+  if (lightVal > 900) {
+    setColor(0,0,0);
+    return;
+  }
+
+  Serial.println(lightVal);
+  Serial.print(" ");
+
+  float inverse = 1.0 - (lightVal / 1023.0);
+  _currBrightness = inverse;
+  Serial.print(_currBrightness);
+  Serial.println(" ");
+
+  _crossfade_currFraction = _i / CROSSFADE_SPEED;
+  Color currentColor = interpolateColorSet(_crossfade_currFraction);
+
+  double hsl[3];
+  _rgbConverter.rgbToHsl(currentColor.r, currentColor.g, currentColor.b, hsl);
+
+  hsl[2] = _currBrightness;
+
+  byte rgb[3];
+  _rgbConverter.hslToRgb(hsl[0], hsl[1], hsl[2], rgb);
+
+  setColor(rgb[0], rgb[1], rgb[2]);
+
+
+  // setColor(currentColor.r, currentColor.g, currentColor.b);
+  _i = (_i + 1) % static_cast<int>(CROSSFADE_SPEED);
+  // _currBrightness = (_currBrightness + 1) % 1
+  // _currBrightness = _crossfade_currFraction;
+  // Serial.println(_currBrightness);
+
 }
 
 void lofiMode() {
@@ -199,11 +261,29 @@ Color interpolate(const Color& color1, const Color& color2, float fraction) {
  * Given two Colors, call setColor() every DELAY_INTERVAL,
  * linearly interpolating between these two Colors.
 */
-void fadeTwo(Color color1, Color color2) {
+void interpolateColor(Color color1, Color color2) {
   for (int i = 1; i < 101; i++) {
     float fraction = i / 100.0;
     Color interpolatedColor = interpolate(color1, color2, fraction);
     setColor(interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
     delay(DELAY_INTERVAL);
   }
+}
+
+// Interpolate between a set of colors
+// Thanks Chat https://sl.bing.net/dADkpPUXIRw
+Color interpolateColorSet(float fraction) {
+    int segmentCount = COLORSET_SIZE - 1;
+    int segmentIndex = static_cast<int>(fraction * segmentCount);
+    float segmentFraction = fraction * segmentCount - segmentIndex;
+
+    const Color& color1 = _colorSet[segmentIndex];
+    const Color& color2 = _colorSet[segmentIndex + 1];
+
+    Color interpolatedColor;
+    interpolatedColor.r = static_cast<int>((color2.r - color1.r) * segmentFraction + color1.r);
+    interpolatedColor.g = static_cast<int>((color2.g - color1.g) * segmentFraction + color1.g);
+    interpolatedColor.b = static_cast<int>((color2.b - color1.b) * segmentFraction + color1.b);
+
+    return interpolatedColor;
 }
