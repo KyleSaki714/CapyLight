@@ -52,6 +52,7 @@ typedef struct {
 const float CROSSFADE_SPEED = 1000.0; // defines how fast the LED fades thru the entire _colorSet. 100=fast 1000=slow (looks nice tho)
 const int COLORSET_SIZE = 7;
 const uint8_t PHOTOCELL_PIN = A0;
+const int PHOTOCELL_OFFSET = 190; // offset to account for ambient light (ceiling lights, etc.) so it's not white all the time
 Color _colorSet[COLORSET_SIZE];
 float _crossfade_currFraction;
 int _i = 0;
@@ -125,8 +126,11 @@ void crossfadeMode() {
   Serial.println("CROSSFADE MODE");
 
   int lightVal = analogRead(A0);
+  
+  // add offset
+  lightVal += PHOTOCELL_OFFSET;
 
-  if (lightVal > 900) {
+  if (lightVal > 1023) {
     setColor(0,0,0);
     return;
   }
