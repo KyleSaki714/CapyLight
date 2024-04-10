@@ -4,7 +4,6 @@
 typedef enum {
   CROSSFADE,
   LOFI,
-  HATS,
   NUMMODES
 } MODE;
 
@@ -63,12 +62,13 @@ const int petThreshold = 1500; // how long until the pet sensing resets (ms)
 const int LOFI_HUE_STEP = 5;
 const int LOFI_RES_CHANGE_THRESHOLD = 2;
 
+const int LOFI_SUBMODE_PIN = 8; // pin for switch to select petting or lofi resistor.
+
 CapacitiveSensor cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 int _petCounter;
 bool lastCapState;
 unsigned long lastLowState;
 int _lastLofiResVal;
-
 
 // HATS
 
@@ -103,6 +103,8 @@ void setup() {
   _modeswitchbtn_laststate = LOW;
   pinMode(INPUT_BUTTON_MODESWITCH, INPUT_PULLUP);
 
+  pinMode(8, INPUT_PULLUP);
+
   _petCounter = 0;
 }
 
@@ -111,14 +113,12 @@ void loop() {
   checkChangeMode();
 
   switch (_currentMode) {
-    case CROSSFADE:
-      crossfadeMode();
-      break;
     case LOFI:
       lofiMode();
       break;
-    case HATS:
-      hatsMode();
+    case CROSSFADE:
+    default:
+      crossfadeMode();
       break;
   }
   delay(50);
@@ -170,33 +170,77 @@ void crossfadeMode() {
 void lofiMode() {
   // Serial.println("LOFI MODE");
 
-  bool useLofiRes = false;
+  int lofiSubmode = digitalRead(LOFI_SUBMODE_PIN);
 
-  // // if selecting hue by wire, override petting
-  int lofiResVal = analogRead(A5);
-
-  // only if there is change (WITHIN LOFI_RES_CHANGE_THRESHOLD) in the lofiRes, change color
-  int delta = abs(lofiResVal - _lastLofiResVal);
-  if (delta > LOFI_RES_CHANGE_THRESHOLD) {
-    Serial.println("changing with lofi resistor");
-    Serial.println(lofiResVal);
-
-    _hue = lofiResVal / 1023.0;
-
-    byte rgb[3];
-    _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
-
-    setColor(rgb[0], rgb[1], rgb[2]); 
-
-    _petCounter = 0;
-
-    _lastLofiResVal = lofiResVal;
-    return;
+  if (lofiSubmode == HIGH) {
+    lofiPettingMode();
+  } else {
+    lofiVariableReistorMode();
   }
-  Serial.print("_lastLofiResVal");
-  Serial.println(_lastLofiResVal);
+
+  // // // if selecting hue by wire, override petting
+  // int lofiResVal = analogRead(A5);
+
+  // // only if there is change (WITHIN LOFI_RES_CHANGE_THRESHOLD) in the lofiRes, change color
+  // int delta = abs(lofiResVal - _lastLofiResVal);
+  // if (delta > LOFI_RES_CHANGE_THRESHOLD) {
+  //   Serial.println("changing with lofi resistor");
+  //   Serial.println(lofiResVal);
+
+  //   _hue = lofiResVal / 1023.0;
+
+  //   byte rgb[3];
+  //   _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
+
+  //   setColor(rgb[0], rgb[1], rgb[2]); 
+
+  //   _petCounter = 0;
+
+  //   _lastLofiResVal = lofiResVal;
+  //   return;
+  // }
+  // Serial.print("_lastLofiResVal");
+  // Serial.println(_lastLofiResVal);
 
 
+  // long sense =  cs_4_2.capacitiveSensor(30);
+  // Serial.print(sense);
+  // bool isPetting = sense > 0 ? HIGH : LOW;
+
+  // // enter low state
+  // // time since last low state
+  // if (isPetting != lastCapState && isPetting == HIGH) {
+  //   _petCounter += LOFI_HUE_STEP;
+
+  //   _hue = _petCounter / 100.0;
+
+  //   byte rgb[3];
+  //   _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
+
+  //   setColor(rgb[0], rgb[1], rgb[2]); 
+
+  //   lastLowState = 0;
+  // } else if (isPetting != lastCapState && isPetting == LOW) {
+  //   lastLowState = millis();
+  // }
+  
+  // // reset pet counter after 1.5 seconds
+  // if (isPetting == LOW && millis() - lastLowState > petThreshold) {
+  //   _petCounter = 0;
+  // }
+
+  // lastCapState = isPetting;
+
+  // Serial.print(isPetting);                  // print sensor output 1
+  // Serial.print(" ");
+  // Serial.print(sense);                  // print sensor output 1
+  // Serial.print(" ");
+  // Serial.println(_petCounter);
+  // _petCounter = _petCounter % 100;
+}
+
+void lofiPettingMode() {
+  Serial.println("petting mode");
   long sense =  cs_4_2.capacitiveSensor(30);
   Serial.print(sense);
   bool isPetting = sense > 0 ? HIGH : LOW;
@@ -233,8 +277,26 @@ void lofiMode() {
   _petCounter = _petCounter % 100;
 }
 
-void hatsMode() {
-  Serial.println("HATS MODE");
+void lofiVariableReistorMode() {
+  int lofiResVal = analogRead(A5);
+
+  // only if there is change (WITHIN LOFI_RES_CHANGE_THRESHOLD) in the lofiRes, change color
+  // int delta = abs(lofiResVal - _lastLofiResVal);
+  // if (delta > LOFI_RES_CHANGE_THRESHOLD) {
+  Serial.println("changing with lofi resistor");
+  Serial.println(lofiResVal);
+
+  _hue = lofiResVal / 1023.0;
+
+  byte rgb[3];
+  _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
+
+  setColor(rgb[0], rgb[1], rgb[2]); 
+
+  _petCounter = 0;
+
+  _lastLofiResVal = lofiResVal;
+  // }
 }
 
 void checkChangeMode() {
