@@ -61,11 +61,13 @@ float _currBrightness = 0.0;
 // LOFI
 const int petThreshold = 1500; // how long until the pet sensing resets (ms)
 const int LOFI_HUE_STEP = 5;
+const int LOFI_RES_CHANGE_THRESHOLD = 2;
 
 CapacitiveSensor cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 int _petCounter;
 bool lastCapState;
 unsigned long lastLowState;
+int _lastLofiResVal;
 
 
 // HATS
@@ -167,11 +169,41 @@ void crossfadeMode() {
 
 void lofiMode() {
   // Serial.println("LOFI MODE");
+
+  bool useLofiRes = false;
+
+  // // if selecting hue by wire, override petting
+  int lofiResVal = analogRead(A5);
+
+  // only if there is change (WITHIN LOFI_RES_CHANGE_THRESHOLD) in the lofiRes, change color
+  int delta = abs(lofiResVal - _lastLofiResVal);
+  if (delta > LOFI_RES_CHANGE_THRESHOLD) {
+    Serial.println("changing with lofi resistor");
+    Serial.println(lofiResVal);
+
+    _hue = lofiResVal / 1023.0;
+
+    byte rgb[3];
+    _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
+
+    setColor(rgb[0], rgb[1], rgb[2]); 
+
+    _petCounter = 0;
+
+    _lastLofiResVal = lofiResVal;
+    return;
+  }
+  Serial.print("_lastLofiResVal");
+  Serial.println(_lastLofiResVal);
+
+
   long sense =  cs_4_2.capacitiveSensor(30);
-  bool isSense = sense > 0 ? HIGH : LOW;
+  Serial.print(sense);
+  bool isPetting = sense > 0 ? HIGH : LOW;
+
   // enter low state
   // time since last low state
-  if (isSense != lastCapState && isSense == HIGH) {
+  if (isPetting != lastCapState && isPetting == HIGH) {
     _petCounter += LOFI_HUE_STEP;
 
     _hue = _petCounter / 100.0;
@@ -182,17 +214,18 @@ void lofiMode() {
     setColor(rgb[0], rgb[1], rgb[2]); 
 
     lastLowState = 0;
-  } else if (isSense != lastCapState && isSense == LOW) {
+  } else if (isPetting != lastCapState && isPetting == LOW) {
     lastLowState = millis();
   }
   
-  if (isSense == LOW && millis() - lastLowState > petThreshold) {
+  // reset pet counter after 1.5 seconds
+  if (isPetting == LOW && millis() - lastLowState > petThreshold) {
     _petCounter = 0;
   }
 
-  lastCapState = sense;
+  lastCapState = isPetting;
 
-  Serial.print(isSense);                  // print sensor output 1
+  Serial.print(isPetting);                  // print sensor output 1
   Serial.print(" ");
   Serial.print(sense);                  // print sensor output 1
   Serial.print(" ");
