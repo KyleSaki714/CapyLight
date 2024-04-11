@@ -4,6 +4,7 @@
 typedef enum {
   CROSSFADE,
   LOFI,
+  // HATS,
   NUMMODES
 } MODE;
 
@@ -59,7 +60,7 @@ float _currBrightness = 0.0;
 
 // LOFI
 const int petThreshold = 1500; // how long until the pet sensing resets (ms)
-const int LOFI_HUE_STEP = 5;
+const int LOFI_HUE_STEP = 2;
 const int LOFI_RES_CHANGE_THRESHOLD = 2;
 
 const int LOFI_SUBMODE_PIN = 8; // pin for switch to select petting or lofi resistor.
@@ -72,7 +73,7 @@ int _lastLofiResVal;
 
 // HATS
 
-
+Mood _moods;
 
 void setup() {
   Serial.begin(9600);
@@ -85,23 +86,24 @@ void setup() {
   setColor(255, 255, 255);
 
   _currentMode = CROSSFADE;
-  Mood moods;
-  moods.white = {255, 255, 255};
-  moods.yellow = {150, 40, 0};
-  moods.warmYellow = {220, 40, 0};
-  moods.red = {220, 0, 0};
+  _moods.white = {255, 255, 255};
+  _moods.yellow = {150, 40, 0};
+  _moods.warmYellow = {220, 40, 0};
+  _moods.red = {220, 0, 0};
 
-  _colorSet[0] = moods.white;
-  _colorSet[1] = moods.yellow;
-  _colorSet[2] = moods.warmYellow;
-  _colorSet[3] = moods.red;
-  _colorSet[4] = moods.warmYellow;
-  _colorSet[5] = moods.yellow;
-  _colorSet[6] = moods.white;
+  _colorSet[0] = _moods.white;
+  _colorSet[1] = _moods.yellow;
+  _colorSet[2] = _moods.warmYellow;
+  _colorSet[3] = _moods.red;
+  _colorSet[4] = _moods.warmYellow;
+  _colorSet[5] = _moods.yellow;
+  _colorSet[6] = _moods.white;
 
   _modeswitchbtn_lastontime = millis();
   _modeswitchbtn_laststate = LOW;
   pinMode(INPUT_BUTTON_MODESWITCH, INPUT_PULLUP);
+
+  cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);
 
   pinMode(8, INPUT_PULLUP);
 
@@ -111,8 +113,11 @@ void setup() {
 void loop() {
 
   checkChangeMode();
-
+  Serial.println("lofipettingmode");
   switch (_currentMode) {
+    // case HATS:
+    //   hatsMode();
+    //   break;
     case LOFI:
       lofiMode();
       break;
@@ -121,7 +126,7 @@ void loop() {
       crossfadeMode();
       break;
   }
-  delay(50);
+  delay(10);
 }
 
 void crossfadeMode() {
@@ -177,88 +182,33 @@ void lofiMode() {
   } else {
     lofiVariableReistorMode();
   }
-
-  // // // if selecting hue by wire, override petting
-  // int lofiResVal = analogRead(A5);
-
-  // // only if there is change (WITHIN LOFI_RES_CHANGE_THRESHOLD) in the lofiRes, change color
-  // int delta = abs(lofiResVal - _lastLofiResVal);
-  // if (delta > LOFI_RES_CHANGE_THRESHOLD) {
-  //   Serial.println("changing with lofi resistor");
-  //   Serial.println(lofiResVal);
-
-  //   _hue = lofiResVal / 1023.0;
-
-  //   byte rgb[3];
-  //   _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
-
-  //   setColor(rgb[0], rgb[1], rgb[2]); 
-
-  //   _petCounter = 0;
-
-  //   _lastLofiResVal = lofiResVal;
-  //   return;
-  // }
-  // Serial.print("_lastLofiResVal");
-  // Serial.println(_lastLofiResVal);
-
-
-  // long sense =  cs_4_2.capacitiveSensor(30);
-  // Serial.print(sense);
-  // bool isPetting = sense > 0 ? HIGH : LOW;
-
-  // // enter low state
-  // // time since last low state
-  // if (isPetting != lastCapState && isPetting == HIGH) {
-  //   _petCounter += LOFI_HUE_STEP;
-
-  //   _hue = _petCounter / 100.0;
-
-  //   byte rgb[3];
-  //   _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
-
-  //   setColor(rgb[0], rgb[1], rgb[2]); 
-
-  //   lastLowState = 0;
-  // } else if (isPetting != lastCapState && isPetting == LOW) {
-  //   lastLowState = millis();
-  // }
-  
-  // // reset pet counter after 1.5 seconds
-  // if (isPetting == LOW && millis() - lastLowState > petThreshold) {
-  //   _petCounter = 0;
-  // }
-
-  // lastCapState = isPetting;
-
-  // Serial.print(isPetting);                  // print sensor output 1
-  // Serial.print(" ");
-  // Serial.print(sense);                  // print sensor output 1
-  // Serial.print(" ");
-  // Serial.println(_petCounter);
-  // _petCounter = _petCounter % 100;
 }
 
 void lofiPettingMode() {
   Serial.println("petting mode");
-  long sense =  cs_4_2.capacitiveSensor(30);
-  Serial.print(sense);
+  long sense =  cs_4_2.capacitiveSensor(3);
+  Serial.print("sensor val: ");
+  Serial.println(sense);
   bool isPetting = sense > 0 ? HIGH : LOW;
+
+  Serial.println(isPetting);
 
   // enter low state
   // time since last low state
-  if (isPetting != lastCapState && isPetting == HIGH) {
+  if (isPetting == HIGH) {
     _petCounter += LOFI_HUE_STEP;
 
     _hue = _petCounter / 100.0;
 
     byte rgb[3];
     _rgbConverter.hslToRgb(_hue, 1, 0.5, rgb);
-
+    Serial.print(_hue);
+    Serial.print(" ");
+    Serial.println("peting now");
     setColor(rgb[0], rgb[1], rgb[2]); 
 
     lastLowState = 0;
-  } else if (isPetting != lastCapState && isPetting == LOW) {
+  } else if (isPetting == LOW) {
     lastLowState = millis();
   }
   
@@ -267,13 +217,13 @@ void lofiPettingMode() {
     _petCounter = 0;
   }
 
-  lastCapState = isPetting;
+  // lastCapState = isPetting;
 
-  Serial.print(isPetting);                  // print sensor output 1
-  Serial.print(" ");
-  Serial.print(sense);                  // print sensor output 1
-  Serial.print(" ");
-  Serial.println(_petCounter);
+  // Serial.print(isPetting);                  // print sensor output 1
+  // Serial.print(" ");
+  // Serial.print(sense);                  // print sensor output 1
+  // Serial.print(" ");
+  // Serial.println(_petCounter);
   _petCounter = _petCounter % 100;
 }
 
@@ -298,6 +248,30 @@ void lofiVariableReistorMode() {
   _lastLofiResVal = lofiResVal;
   // }
 }
+
+// void hatsMode() {
+//   int hatVal = analogRead(A2);
+
+//   if (hatVal <= 500 && hatVal > 400 ) {
+//     Serial.println("Orange");
+//     setColor(_moods.red);
+
+//   } else if (hatVal <= 200 && hatVal > 100) {
+//     Serial.println("Propeller");
+//     setColor(_moods.yellow);
+
+//   } else if (hatVal <= 700 && hatVal > 600) {
+//     Serial.println("Watermelon");
+//     setColor(_moods.warmYellow);
+
+//   } else {
+//     Serial.println("White");
+//     setColor(_moods.white);
+//   }
+
+// }
+
+
 
 void checkChangeMode() {
   int buttonState = readButtonPullUp(INPUT_BUTTON_MODESWITCH);
@@ -342,6 +316,11 @@ void setColor(int red, int green, int blue)
   analogWrite(RGB_RED_PIN, red);
   analogWrite(RGB_GREEN_PIN, green);
   analogWrite(RGB_BLUE_PIN, blue);
+}
+
+void setColor(Color rgb)
+{
+  setColor(rgb.r, rgb.g, rgb.b);
 }
 
 /**
